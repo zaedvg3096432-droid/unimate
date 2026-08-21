@@ -1,0 +1,12 @@
+.dart_tool/
+.idea/
+.vscode/
+.metadata
+.packages
+build/
+*.iml
+android/.gradle/
+android/local.properties
+ios/Pods/
+ios/.symlinks/
+

@@ -1,0 +1,6 @@
+package com.ahmedalaa.unimate
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
+

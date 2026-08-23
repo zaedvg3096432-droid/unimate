@@ -34,13 +34,11 @@ class DataNotifier extends StateNotifier<DataState> {
   static DataState _seed() => DataState(
         subjects: const [Subject(id: 's1', name: 'Mobile Development', color: 0xFF00E5FF, instructor: 'Dr. Ahmed'), Subject(id: 's2', name: 'Algorithms', color: 0xFF7C4DFF, instructor: 'Dr. Sara')],
         events: const [ClassEvent(id: 'e1', subjectId: 's1', title: 'Flutter Lecture', weekday: 1, startMinutes: 600, endMinutes: 690, location: 'Hall A', instructor: 'Dr. Ahmed'), ClassEvent(id: 'e2', subjectId: 's2', title: 'Algorithms Section', weekday: 2, startMinutes: 720, endMinutes: 810, location: 'Lab 2', instructor: 'Dr. Sara', isSection: true, weekPattern: WeekPattern.odd)],
-        tasks: const [StudentTask(id: 't1', title: 'Prepare the mobile UX wireframes', dueAt: _datePlusOne, subjectId: 's1', priority: TaskPriority.high)],
+        tasks: [StudentTask(id: 't1', title: 'Prepare the mobile UX wireframes', dueAt: DateTime.now().add(const Duration(days: 1)), subjectId: 's1', priority: TaskPriority.high)],
         notes: const [Note(id: 'n1', title: 'Algorithms revision map', body: 'Review algorithms, proofs, and recurrence relations.', subjectId: 's2', pinned: true, tags: ['exam', 'priority']), Note(id: 'n2', title: 'Flutter architecture', body: 'Keep UI, state, and services separated for maintainability.', subjectId: 's1', tags: ['flutter'])],
         habits: const [Habit(id: 'h1', name: 'Read lecture notes', frequency: HabitFrequency.daily, target: 1), Habit(id: 'h2', name: 'Practice coding', frequency: HabitFrequency.weekly, weekdays: [1, 3, 6])],
         attendance: const [],
       );
-  static const DateTime _datePlusOne = DateTime(2030, 1, 2);
-
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('unimate_data');

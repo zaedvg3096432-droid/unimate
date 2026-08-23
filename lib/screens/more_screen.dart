@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/app_strings.dart';
 import '../services/platform_services.dart';
 import '../state/app_state.dart';
+import 'feature_screens.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -14,9 +14,9 @@ class MoreScreen extends ConsumerWidget {
     final data = ref.watch(dataProvider);
     return SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
       Text(context.t('more'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)), const SizedBox(height: 15),
-      _item(context, Icons.bar_chart, context.t('attendanceAnalytics'), context.t('attendanceHint'), () => _showAnalytics(context, ref)),
-      _item(context, Icons.repeat, context.t('habitTracker'), context.t('habitHint'), () => _showHabits(context, ref)),
-      _item(context, Icons.timer, context.t('focusExam'), context.t('focusHint'), () => _showFocus(context)),
+      _item(context, Icons.bar_chart, context.t('attendanceAnalytics'), context.t('attendanceHint'), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnalyticsScreen()))),
+      _item(context, Icons.repeat, context.t('habitTracker'), context.t('habitHint'), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HabitsScreen()))),
+      _item(context, Icons.timer, context.t('focusExam'), context.t('focusHint'), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FocusScreen()))),
       const Divider(height: 32),
       Text(context.t('dataBackup'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ListTile(leading: const Icon(Icons.upload_file), title: Text(context.t('exportBackup')), onTap: () async { await ExportService().shareBackup(data); if (context.mounted) _snack(context, context.t('exportReady')); }),
@@ -35,8 +35,5 @@ class MoreScreen extends ConsumerWidget {
   }
   Widget _item(BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap) => ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right), onTap: onTap);
   void _snack(BuildContext context, String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-  void _showAnalytics(BuildContext context, WidgetRef ref) { final data = ref.read(dataProvider); final notifier = ref.read(dataProvider.notifier); showDialog<void>(context: context, builder: (_) => AlertDialog(title: Text(context.t('attendanceAnalytics')), content: Column(mainAxisSize: MainAxisSize.min, children: [ListTile(title: Text(context.t('attendance')), trailing: Text('${(notifier.attendanceRate * 100).round()}%')), ListTile(title: Text(context.t('taskCompletion')), trailing: Text('${(notifier.taskRate * 100).round()}%')), ListTile(title: Text(context.t('notes')), trailing: Text('${data.notes.length}'))]), actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(context.t('close')))])); }
-  void _showHabits(BuildContext context, WidgetRef ref) { showDialog<void>(context: context, builder: (_) => Consumer(builder: (context, ref, child) { final habits = ref.watch(dataProvider).habits; return AlertDialog(title: Text(context.t('habitTracker')), content: SizedBox(width: double.maxFinite, child: ListView(shrinkWrap: true, children: [for (final habit in habits) CheckboxListTile(value: habit.completedToday, onChanged: (_) => ref.read(dataProvider.notifier).toggleHabit(habit.id), title: Text(habit.name), subtitle: Text(habit.frequency.name))])), actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(context.t('close')))]); })); }
-  void _showFocus(BuildContext context) { var seconds = 25 * 60; Timer? timer; showDialog<void>(context: context, builder: (_) => StatefulBuilder(builder: (dialogContext, setState) => AlertDialog(title: Text(context.t('focusExam')), content: Column(mainAxisSize: MainAxisSize.min, children: [Text(context.t('focusHint')), const SizedBox(height: 18), Text('${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold))]), actions: [FilledButton(onPressed: () { timer?.cancel(); timer = Timer.periodic(const Duration(seconds: 1), (_) { if (seconds > 0) { setState(() => seconds--); } else { timer?.cancel(); } }); }, child: Text(context.t('start'))), TextButton(onPressed: () { timer?.cancel(); Navigator.pop(dialogContext); }, child: Text(context.t('close')))]))); }
   void _about(BuildContext context) => showAboutDialog(context: context, applicationName: 'Unimate', applicationVersion: '1.0.1', children: [Text(context.t('developed')), TextButton(onPressed: () => launchUrl(Uri.parse('https://www.linkedin.com/in/ahmed-alaa-897a633a8/'), mode: LaunchMode.externalApplication), child: Text(context.t('linkedin'))), TextButton(onPressed: () => launchUrl(Uri.parse('https://github.com/zaedvg3096432-droid'), mode: LaunchMode.externalApplication), child: Text(context.t('github')))]);
 }

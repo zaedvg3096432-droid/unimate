@@ -9,17 +9,17 @@ const _uuid = Uuid();
 const subjectPalette = <int>[0xFF00E5FF, 0xFF7C4DFF, 0xFFFF4081, 0xFFFF6E40, 0xFFFFD740, 0xFF69F0AE, 0xFF40C4FF, 0xFFB2FF59, 0xFFEA80FC, 0xFFFF8A80, 0xFF84FFFF, 0xFFA7FFEB, 0xFFCCFF90, 0xFF8C9EFF, 0xFFFF9E80, 0xFFE040FB];
 
 class AppSettings {
-  const AppSettings({this.themeMode = ThemeMode.dark, this.locale = const Locale('en'), this.textScale = 1, this.motivationEnabled = true, this.motivationFrequency = 1, this.autoMute = false});
-  final ThemeMode themeMode; final Locale locale; final double textScale; final bool motivationEnabled, autoMute; final int motivationFrequency;
-  AppSettings copyWith({ThemeMode? themeMode, Locale? locale, double? textScale, bool? motivationEnabled, int? motivationFrequency, bool? autoMute}) => AppSettings(themeMode: themeMode ?? this.themeMode, locale: locale ?? this.locale, textScale: textScale ?? this.textScale, motivationEnabled: motivationEnabled ?? this.motivationEnabled, motivationFrequency: motivationFrequency ?? this.motivationFrequency, autoMute: autoMute ?? this.autoMute);
-  Map<String, dynamic> toJson() => {'themeMode': themeMode.name, 'locale': locale.languageCode, 'textScale': textScale, 'motivationEnabled': motivationEnabled, 'motivationFrequency': motivationFrequency, 'autoMute': autoMute};
+  const AppSettings({this.themeMode = ThemeMode.dark, this.locale = const Locale('en'), this.textScale = 1, this.motivationEnabled = true, this.motivationFrequency = 1, this.autoMute = false, this.onboardingSeen = false});
+  final ThemeMode themeMode; final Locale locale; final double textScale; final bool motivationEnabled, autoMute; final int motivationFrequency; final bool onboardingSeen;
+  AppSettings copyWith({ThemeMode? themeMode, Locale? locale, double? textScale, bool? motivationEnabled, int? motivationFrequency, bool? autoMute, bool? onboardingSeen}) => AppSettings(themeMode: themeMode ?? this.themeMode, locale: locale ?? this.locale, textScale: textScale ?? this.textScale, motivationEnabled: motivationEnabled ?? this.motivationEnabled, motivationFrequency: motivationFrequency ?? this.motivationFrequency, autoMute: autoMute ?? this.autoMute, onboardingSeen: onboardingSeen ?? this.onboardingSeen);
+  Map<String, dynamic> toJson() => {'themeMode': themeMode.name, 'locale': locale.languageCode, 'textScale': textScale, 'motivationEnabled': motivationEnabled, 'motivationFrequency': motivationFrequency, 'autoMute': autoMute, 'onboardingSeen': onboardingSeen};
 }
 
 class SettingsNotifier extends StateNotifier<AppSettings> {
   SettingsNotifier() : super(const AppSettings()) { _load(); }
-  Future<void> _load() async { final prefs = await SharedPreferences.getInstance(); state = state.copyWith(themeMode: ThemeMode.values.firstWhere((m) => m.name == (prefs.getString('themeMode') ?? 'dark'), orElse: () => ThemeMode.dark), locale: Locale(prefs.getString('locale') ?? 'en'), textScale: prefs.getDouble('textScale') ?? 1, motivationEnabled: prefs.getBool('motivationEnabled') ?? true, motivationFrequency: prefs.getInt('motivationFrequency') ?? 1, autoMute: prefs.getBool('autoMute') ?? false); }
+  Future<void> _load() async { try { final prefs = await SharedPreferences.getInstance(); state = state.copyWith(themeMode: ThemeMode.values.firstWhere((m) => m.name == (prefs.getString('themeMode') ?? 'dark'), orElse: () => ThemeMode.dark), locale: Locale(prefs.getString('locale') ?? 'en'), textScale: prefs.getDouble('textScale') ?? 1, motivationEnabled: prefs.getBool('motivationEnabled') ?? true, motivationFrequency: prefs.getInt('motivationFrequency') ?? 1, autoMute: prefs.getBool('autoMute') ?? false, onboardingSeen: prefs.getBool('onboardingSeen') ?? false); } catch (_) {} }
   void update(AppSettings value) { state = value; _save(value); }
-  Future<void> _save(AppSettings value) async { final prefs = await SharedPreferences.getInstance(); await prefs.setString('themeMode', value.themeMode.name); await prefs.setString('locale', value.locale.languageCode); await prefs.setDouble('textScale', value.textScale); await prefs.setBool('motivationEnabled', value.motivationEnabled); await prefs.setInt('motivationFrequency', value.motivationFrequency); await prefs.setBool('autoMute', value.autoMute); }
+  Future<void> _save(AppSettings value) async { try { final prefs = await SharedPreferences.getInstance(); await prefs.setString('themeMode', value.themeMode.name); await prefs.setString('locale', value.locale.languageCode); await prefs.setDouble('textScale', value.textScale); await prefs.setBool('motivationEnabled', value.motivationEnabled); await prefs.setInt('motivationFrequency', value.motivationFrequency); await prefs.setBool('autoMute', value.autoMute); await prefs.setBool('onboardingSeen', value.onboardingSeen); } catch (_) {} }
 }
 final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((_) => SettingsNotifier());
 
@@ -40,10 +40,10 @@ class DataNotifier extends StateNotifier<DataState> {
         attendance: const [],
       );
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('unimate_data');
-    if (raw == null) return;
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('unimate_data');
+      if (raw == null) return;
       final map = jsonDecode(raw) as Map<String, dynamic>;
       state = DataState(subjects: _subjects(map['subjects']), events: _events(map['events']), tasks: _tasks(map['tasks']), notes: _notes(map['notes']), habits: _habits(map['habits']), attendance: _attendance(map['attendance']));
     } catch (_) {}
@@ -55,7 +55,7 @@ class DataNotifier extends StateNotifier<DataState> {
   List<Habit> _habits(dynamic value) => value is List ? value.map((x) => Habit.fromJson(Map<String, dynamic>.from(x))).toList() : state.habits;
   List<AttendanceRecord> _attendance(dynamic value) => value is List ? value.map((x) => AttendanceRecord.fromJson(Map<String, dynamic>.from(x))).toList() : state.attendance;
   void _commit(DataState next) { state = next; _save(); }
-  Future<void> _save() async { final prefs = await SharedPreferences.getInstance(); await prefs.setString('unimate_data', backupJson(subjects: state.subjects, events: state.events, tasks: state.tasks, notes: state.notes, habits: state.habits, attendance: state.attendance)); }
+  Future<void> _save() async { try { final prefs = await SharedPreferences.getInstance(); await prefs.setString('unimate_data', backupJson(subjects: state.subjects, events: state.events, tasks: state.tasks, notes: state.notes, habits: state.habits, attendance: state.attendance)); } catch (_) {} }
 
   Subject subjectFor(String id) => state.subjects.firstWhere((s) => s.id == id, orElse: () => state.subjects.first);
   ClassEvent? eventFor(String id) => state.events.where((e) => e.id == id).firstOrNull;

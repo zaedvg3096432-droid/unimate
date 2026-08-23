@@ -16,6 +16,10 @@ class DashboardScreen extends ConsumerWidget {
     final next = data.events.first;
     final subject = data.subjects.firstWhere((item) => item.id == next.subjectId);
     final attendance = (notifier.attendanceRate * 100).round();
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? context.t('goodMorning') : hour < 18 ? context.t('goodAfternoon') : context.t('goodEvening');
+    final now = DateTime.now();
+    final dateLabel = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
     return SafeArea(
       child: ListView(
@@ -24,8 +28,8 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(context.t('goodMorning'), style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
-                Text(context.t('makeTodayCount')),
+                Text(greeting, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                Text('${context.t('dateToday')} · $dateLabel'),
               ])),
               IconButton(onPressed: () => showSearch(context: context, delegate: GlobalSearch(ref)), icon: const Icon(Icons.search)),
             ],

@@ -4,6 +4,15 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def signingDir = new File(rootProject.buildDir, "unimate-signing")
+def signingFile = new File(signingDir, "unimate-release.keystore")
+if (!signingFile.exists()) {
+    signingDir.mkdirs()
+    def keytool = new File(System.getProperty("java.home"), "bin/keytool").absolutePath
+    def process = new ProcessBuilder(keytool, "-genkeypair", "-v", "-keystore", signingFile.absolutePath, "-storepass", "unimate-build", "-alias", "unimate", "-keypass", "unimate-build", "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000", "-dname", "CN=Unimate, OU=Build, O=Ahmed Alaa, L=, S=, C=US").inheritIO().start()
+    if (process.waitFor() != 0) throw new GradleException("Unable to create the temporary Unimate signing key")
+}
+
 android {
     namespace "com.ahmedalaa.unimate"
     compileSdk flutter.compileSdkVersion
@@ -21,6 +30,19 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = JavaVersion.VERSION_17 }
+    signingConfigs {
+        release {
+            storeFile signingFile
+            storePassword "unimate-build"
+            keyAlias "unimate"
+            keyPassword "unimate-build"
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
 }
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'

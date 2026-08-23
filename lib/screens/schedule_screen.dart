@@ -57,7 +57,31 @@ class _Weekly extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final headers = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(12), child: SizedBox(width: 840, child: Column(children: [Row(children: [for (final day in headers) Expanded(child: Center(child: Text(day, style: const TextStyle(fontWeight: FontWeight.bold))))]), const SizedBox(height: 12), Expanded(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [for (var day = 1; day <= 7; day++) Expanded(child: Column(children: [for (final event in events.where((item) => item.weekday == day)) _Block(event: event, color: Color(data.subjects.firstWhere((s) => s.id == event.subjectId).color))]))]))]));
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.all(12),
+      child: SizedBox(
+        width: 840,
+        child: Column(
+          children: [
+            Row(children: [for (final day in headers) Expanded(child: Center(child: Text(day, style: const TextStyle(fontWeight: FontWeight.bold))))]),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var day = 1; day <= 7; day++)
+                    Expanded(child: Column(children: [
+                      for (final event in events.where((item) => item.weekday == day))
+                        _Block(event: event, color: Color(data.subjects.firstWhere((s) => s.id == event.subjectId).color)),
+                    ])),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

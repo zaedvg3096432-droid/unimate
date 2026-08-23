@@ -1,24 +1,52 @@
 # Unimate
 
-Cross-platform student productivity, routine, attendance, and study companion built with Flutter.
+**Unimate** هو تطبيق Flutter متعدد المنصات لإدارة الروتين الأكاديمي والإنتاجية الطلابية، يجمع الجدول الدراسي والحضور والمهام والملاحظات والعادات ووضع التركيز والنسخ الاحتياطي في تجربة واحدة ثنائية اللغة.
 
-## Run locally
+## الميزات المنفذة
+
+| المجال | ما يتضمنه التطبيق |
+| --- | --- |
+| الهوية | شاشة بداية سينمائية، شعار Unimate، وعبارة `Developed with 💻 by Ahmed Alaa`. |
+| الجدول | عرض يومي وأسبوعي وشهري، تفاصيل المادة والقاعة والمدرس والأوقات، ألوان المواد، وتدوير Odd/Even weeks. |
+| الحضور | حالات حاضر وغائب وبعذر، معدل حضور لكل مادة، تنبيه حد الغياب، وإمكانية تسجيل الحضور من الجدول. |
+| المهام | أولويات منخفضة ومتوسطة وعالية، تاريخ استحقاق، إنجاز، وربط بالمادة. |
+| الملاحظات | ربط بالمادة، تثبيت، أهمية، وسوم، ومرفقات عبر طبقة الخدمة. |
+| العادات | تكرار يومي وأسبوعي وكل X ساعات مع إشعارات قابلة للتنفيذ. |
+| التركيز | مؤقت Pomodoro، عدّاد الاختبارات، وتسجيل ساعات الدراسة للتحليلات. |
+| الإشعارات | تنبيهات المحاضرات، والتحفيز يظهر في درج إشعارات النظام فقط ولا يظهر داخل واجهات التطبيق. |
+| البحث والتكامل | بحث شامل، نسخ واستعادة JSON، تصدير PDF/PNG، Google Drive boundary، DND، وواجهة ودجات الشاشة الرئيسية. |
+| التخصيص | العربية RTL والإنجليزية LTR، ثيم فاتح وداكن وثيم النظام، وتكبير الخط. |
+
+## بنية المشروع
+
+يعتمد المشروع على **Riverpod** للحالة، وطبقة خدمات منفصلة للإشعارات والتصدير والنسخ الاحتياطي والتكاملات الأصلية. توجد ملفات Android أصلية مبدئية داخل `android/`، بما في ذلك `MainActivity` وقنوات التكامل الخاصة بوضع عدم الإزعاج والودجات. تعمل الميزات غير المدعومة على منصة معينة بتدهور آمن بدل تعطيل التطبيق.
+
+## التشغيل المحلي
+
+يتطلب المشروع Flutter 3.22 أو أحدث وDart 3.5 أو أحدث:
 
 ```bash
 flutter pub get
+flutter analyze
+flutter test
 flutter run
 ```
 
-## Architecture
+## بناء APK تلقائيًا
 
-- Riverpod state containers and repository boundary ready for local/cloud persistence.
-- Feature-first screens, typed domain models, adaptive Material 3 UI.
-- English/Arabic locale switching with RTL support.
-- Notifications, exports, backup, and platform integrations live behind services so unsupported platforms degrade safely.
+الملف `.github/workflows/build_apk.yml` يعمل عند الدفع إلى `main` أو يدويًا من تبويب **Actions**. يقوم بتثبيت Java 17 وFlutter Stable، ثم ينفذ `flutter pub get` و`flutter analyze` ويبني إصدار Release من APK، وبعد ذلك يرفع الملف باسم `unimate-release-apk`.
 
-## Android APK CI
+بعد انتهاء المهمة، يمكن تنزيل APK من صفحة تشغيل الـ workflow عبر قسم **Artifacts**. لا يحتاج المستخدم إلى تثبيت Android SDK على جهازه لبناء النسخة من خلال GitHub Actions.
 
-Push to `main`; GitHub Actions builds a release APK and uploads it as `unimate-release-apk`.
+## تكاملات النظام والصلاحيات
 
-> DND access and home-screen widgets need platform-specific user approval / native widget registration. The app gracefully opens notification policy access for DND.
+تحتاج ميزة **Auto-Mute / Do Not Disturb** إلى منح صلاحية Notification Policy Access من إعدادات Android. وتحتاج الودجات إلى تسجيل Widget Provider الأصلي داخل المنصة. كما يمكن توصيل مزامنة Google Drive بمصادقته عند اختيار التخزين السحابي. هذه النقاط معزولة خلف خدمات التطبيق كي يبقى البناء الأساسي قابلًا للتشغيل على المنصات المختلفة.
 
+## معلومات المطور
+
+- [LinkedIn — Ahmed Alaa](https://www.linkedin.com/in/ahmed-alaa-897a633a8/)
+- [GitHub — zaedvg3096432-droid](https://github.com/zaedvg3096432-droid)
+
+## المستودع
+
+المشروع منشور في مستودع GitHub الحالي باسم [`zaedvg3096432-droid/unimate`](https://github.com/zaedvg3096432-droid/unimate). راجع إعدادات خصوصية المستودع في GitHub إذا أردت جعله خاصًا قبل مشاركة الرابط مع الآخرين.

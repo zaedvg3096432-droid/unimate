@@ -1,100 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
+import '../core/app_strings.dart';
 import '../models/app_models.dart';
 import '../services/platform_services.dart';
 import '../state/app_state.dart';
 
-class ScheduleScreen extends ConsumerStatefulWidget {
-  const ScheduleScreen({super.key});
-  @override ConsumerState<ScheduleScreen> createState() => _ScheduleScreenState();
-}
-
+class ScheduleScreen extends ConsumerStatefulWidget { const ScheduleScreen({super.key}); @override ConsumerState<ScheduleScreen> createState() => _ScheduleScreenState(); }
 class _ScheduleScreenState extends ConsumerState<ScheduleScreen> with SingleTickerProviderStateMixin {
-  late final TabController tabs;
-  final controller = ScreenshotController();
+  late final TabController tabs; final capture = ScreenshotController();
   @override void initState() { super.initState(); tabs = TabController(length: 3, vsync: this); }
   @override void dispose() { tabs.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    final data = ref.watch(dataProvider);
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Academic timetable'),
-          bottom: TabBar(controller: tabs, tabs: const [Tab(text: 'Daily'), Tab(text: 'Weekly'), Tab(text: 'Monthly')]),
-          actions: [PopupMenuButton<String>(
-            onSelected: (format) async {
-              final bytes = await controller.capture(pixelRatio: 3);
-              if (bytes == null) return;
-              if (format == 'PNG') { await ExportService().sharePng(bytes); } else { await ExportService().sharePdf(bytes); }
-            },
-            itemBuilder: (_) => const [PopupMenuItem(value: 'PNG', child: Text('Export high-res PNG')), PopupMenuItem(value: 'PDF', child: Text('Export PDF'))],
-          )],
-        ),
-        body: Screenshot(controller: controller, child: TabBarView(controller: tabs, children: [_Daily(events: data.events, data: data), _Weekly(events: data.events, data: data), const _Monthly()])),
-        floatingActionButton: FloatingActionButton.extended(onPressed: () => _eventEditor(context), icon: const Icon(Icons.add), label: const Text('Class')),
-      ),
-    );
-  }
-
-  void _eventEditor(BuildContext context) => showDialog(context: context, builder: (_) => AlertDialog(title: const Text('Add lecture / section'), content: const Text('Event editor supports subject, hall, instructor, start/end, reminder, color and odd/even rotation. Connect this form to your persistence provider for production data entry.'), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))]));
+  @override Widget build(BuildContext context) { final data = ref.watch(dataProvider); return SafeArea(child: Scaffold(appBar: AppBar(title: Text(context.t('academicTimetable')), bottom: TabBar(controller: tabs, tabs: [Tab(text: context.t('daily')), Tab(text: context.t('weekly')), Tab(text: context.t('monthly'))]), actions: [PopupMenuButton<String>(onSelected: (format) async { final bytes = await capture.capture(pixelRatio: 3); if (bytes == null) return; if (format == 'PNG') { await ExportService().sharePng(bytes); } else { await ExportService().sharePdf(bytes); } }, itemBuilder: (_) => [PopupMenuItem(value: 'PNG', child: Text('PNG')), PopupMenuItem(value: 'PDF', child: Text('PDF'))])]), body: Screenshot(controller: capture, child: TabBarView(controller: tabs, children: [_Daily(events: data.events, data: data), _Weekly(events: data.events, data: data), _Monthly(data: data)])), floatingActionButton: FloatingActionButton.extended(onPressed: () => _addEvent(context), icon: const Icon(Icons.add), label: Text(context.t('class'))))); }
+  Future<void> _addEvent(BuildContext context) async { final title = TextEditingController(); final location = TextEditingController(); final data = ref.read(dataProvider); String subjectId = data.subjects.first.id; int weekday = 1; final result = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setState) => AlertDialog(title: Text(context.t('class')), content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: title, decoration: InputDecoration(labelText: context.t('eventTitle'))), TextField(controller: location, decoration: InputDecoration(labelText: context.t('location'))), DropdownButtonFormField<String>(value: subjectId, decoration: InputDecoration(labelText: context.t('subject')), items: [for (final subject in data.subjects) DropdownMenuItem(value: subject.id, child: Text(subject.name))], onChanged: (value) => setState(() => subjectId = value ?? subjectId)), DropdownButtonFormField<int>(value: weekday, decoration: InputDecoration(labelText: context.t('weekday')), items: [for (var day = 1; day <= 7; day++) DropdownMenuItem(value: day, child: Text(_day(context, day)))], onChanged: (value) => setState(() => weekday = value ?? weekday))])), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(context.t('cancel'))), FilledButton(onPressed: () { if (title.text.trim().isNotEmpty && location.text.trim().isNotEmpty) { ref.read(dataProvider.notifier).addEvent(subjectId: subjectId, title: title.text.trim(), location: location.text.trim(), weekday: weekday, startMinutes: 9 * 60, endMinutes: 10 * 60); Navigator.pop(dialogContext, true); } }, child: Text(context.t('save')))]))); if (result == true && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('saved')))); }
+  String _day(BuildContext context, int day) => [context.t('monday'), context.t('tuesday'), context.t('wednesday'), context.t('thursday'), context.t('friday'), context.t('saturday'), context.t('sunday')][day - 1];
 }
 
-class _Daily extends ConsumerWidget {
-  const _Daily({required this.events, required this.data});
-  final List<ClassEvent> events;
-  final DataState data;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => ListView(padding: const EdgeInsets.all(16), children: [const Text('Today • timeline', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const SizedBox(height: 14), for (final event in events) _ClassTile(event: event, subject: data.subjects.firstWhere((s) => s.id == event.subjectId), onAttendance: (status) => ref.read(dataProvider.notifier).logAttendance(event.id, status))]);
-}
+class _Daily extends ConsumerWidget { const _Daily({required this.events, required this.data}); final List<ClassEvent> events; final DataState data; @override Widget build(BuildContext context, WidgetRef ref) { final day = DateTime.now().weekday; final list = events.where((event) => event.weekday == day).toList(); return ListView(padding: const EdgeInsets.all(16), children: [Text(context.t('todayTimeline'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const SizedBox(height: 14), if (list.isEmpty) Center(child: Padding(padding: const EdgeInsets.all(30), child: Text(context.t('freeDay')))), for (final event in list) _ClassTile(event: event, subject: data.subjects.firstWhere((s) => s.id == event.subjectId), onAttendance: (status) => ref.read(dataProvider.notifier).logAttendance(event.id, status))]); } }
 
-class _Weekly extends StatelessWidget {
-  const _Weekly({required this.events, required this.data});
-  final List<ClassEvent> events;
-  final DataState data;
-  @override
-  Widget build(BuildContext context) {
-    final headers = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.all(12),
-      child: SizedBox(
-        width: 840,
-        child: Column(
-          children: [
-            Row(children: [for (final day in headers) Expanded(child: Center(child: Text(day, style: const TextStyle(fontWeight: FontWeight.bold))))]),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var day = 1; day <= 7; day++)
-                    Expanded(child: Column(children: [
-                      for (final event in events.where((item) => item.weekday == day))
-                        _Block(event: event, color: Color(data.subjects.firstWhere((s) => s.id == event.subjectId).color)),
-                    ])),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+class _Weekly extends StatelessWidget { const _Weekly({required this.events, required this.data}); final List<ClassEvent> events; final DataState data; @override Widget build(BuildContext context) { final headers = [context.t('monday'), context.t('tuesday'), context.t('wednesday'), context.t('thursday'), context.t('friday'), context.t('saturday'), context.t('sunday')]; return SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(12), child: SizedBox(width: 840, child: Column(children: [Row(children: [for (final day in headers) Expanded(child: Center(child: Text(day, style: const TextStyle(fontWeight: FontWeight.bold))))]), const SizedBox(height: 12), SizedBox(height: 460, child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [for (var day = 1; day <= 7; day++) Expanded(child: Column(children: [for (final event in events.where((item) => item.weekday == day)) _Block(event: event, color: Color(data.subjects.firstWhere((s) => s.id == event.subjectId).color))]))]))]))); } }
 
-class _Monthly extends StatelessWidget { const _Monthly(); @override Widget build(BuildContext context) => const Center(child: Text('Monthly agenda\nExams, deadlines, and appointments', textAlign: TextAlign.center)); }
+class _Monthly extends StatelessWidget { const _Monthly({required this.data}); final DataState data; @override Widget build(BuildContext context) => Center(child: Text(context.t('monthlyAgenda'), textAlign: TextAlign.center)); }
 
-class _ClassTile extends StatelessWidget {
-  const _ClassTile({required this.event, required this.subject, required this.onAttendance});
-  final ClassEvent event;
-  final Subject subject;
-  final ValueChanged<AttendanceStatus> onAttendance;
-  String _time(int n) => '${(n ~/ 60).toString().padLeft(2, '0')}:${(n % 60).toString().padLeft(2, '0')}';
-  @override
-  Widget build(BuildContext context) => Card(child: ListTile(leading: Container(width: 8, height: 55, decoration: BoxDecoration(color: Color(subject.color), borderRadius: BorderRadius.circular(5))), title: Text(event.title), subtitle: Text('${_time(event.startMinutes)}–${_time(event.endMinutes)} • ${event.location}\n${event.instructor} • ${event.weekPattern.name} weeks'), isThreeLine: true, trailing: PopupMenuButton<AttendanceStatus>(tooltip: 'Log attendance', onSelected: onAttendance, itemBuilder: (_) => const [PopupMenuItem(value: AttendanceStatus.present, child: Text('Present')), PopupMenuItem(value: AttendanceStatus.absent, child: Text('Absent')), PopupMenuItem(value: AttendanceStatus.excused, child: Text('Excused'))])));
-}
-
+class _ClassTile extends StatelessWidget { const _ClassTile({required this.event, required this.subject, required this.onAttendance}); final ClassEvent event; final Subject subject; final ValueChanged<AttendanceStatus> onAttendance; String _time(int n) => '${(n ~/ 60).toString().padLeft(2, '0')}:${(n % 60).toString().padLeft(2, '0')}'; @override Widget build(BuildContext context) => Card(child: ListTile(leading: Container(width: 8, height: 55, decoration: BoxDecoration(color: Color(subject.color), borderRadius: BorderRadius.circular(5))), title: Text('${subject.name} · ${event.title}'), subtitle: Text('${_time(event.startMinutes)}–${_time(event.endMinutes)} • ${event.location}\n${event.instructor} • ${event.weekPattern.name}'), isThreeLine: true, trailing: PopupMenuButton<AttendanceStatus>(tooltip: context.t('logAttendance'), onSelected: onAttendance, itemBuilder: (_) => [PopupMenuItem(value: AttendanceStatus.present, child: Text(context.t('present'))), PopupMenuItem(value: AttendanceStatus.absent, child: Text(context.t('absent'))), PopupMenuItem(value: AttendanceStatus.excused, child: Text(context.t('excused')))]))); }
 class _Block extends StatelessWidget { const _Block({required this.event, required this.color}); final ClassEvent event; final Color color; @override Widget build(BuildContext context) => Container(width: double.infinity, margin: const EdgeInsets.all(4), padding: const EdgeInsets.all(7), decoration: BoxDecoration(color: color.withValues(alpha: .3), borderRadius: BorderRadius.circular(8), border: Border.all(color: color)), child: Text(event.title, style: const TextStyle(fontSize: 11))); }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'services/platform_services.dart';
 import 'state/app_state.dart';
 import 'widgets/unimate_shell.dart';
+import 'core/app_strings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +22,7 @@ class UnimateApp extends ConsumerWidget {
     final dark = ThemeData.dark(useMaterial3: true);
     final light = ThemeData.light(useMaterial3: true);
     return MaterialApp(
-      title: 'Unimate',
+      onGenerateTitle: (context) => context.t('appTitle'),
       debugShowCheckedModeBanner: false,
       locale: settings.locale,
       supportedLocales: const [Locale('en'), Locale('ar')],
@@ -67,15 +68,15 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) => Scaffold(
         body: Container(
           decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF071525), Color(0xFF1B1040), Color(0xFF090D18)])),
-          child: const Center(
+          child: Center(
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.school_rounded, size: 96, color: Color(0xFF00E5FF)),
-              SizedBox(height: 18),
-              Text('Unimate', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-              SizedBox(height: 8),
-              Text('Your academic universe'),
-              Spacer(),
-              Padding(padding: EdgeInsets.only(bottom: 40), child: Text('Developed with 💻 by Ahmed Alaa', style: TextStyle(color: Colors.white70))),
+              const Icon(Icons.school_rounded, size: 96, color: Color(0xFF00E5FF)),
+              const SizedBox(height: 18),
+              const Text('Unimate', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+              const SizedBox(height: 8),
+              Text(context.t('academicUniverse'), style: const TextStyle(color: Colors.white)),
+              const Spacer(),
+              Padding(padding: const EdgeInsets.only(bottom: 40), child: Text(context.t('developed'), style: const TextStyle(color: Colors.white70))),
             ]),
           ),
         ),
